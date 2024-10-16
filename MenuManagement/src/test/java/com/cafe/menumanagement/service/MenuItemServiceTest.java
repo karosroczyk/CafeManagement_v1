@@ -37,8 +37,8 @@ class MenuItemServiceTest {
 
     @Test
     void testReadMenuItems() {
-        MenuItem espresso = new MenuItem("Espresso", "Strong black coffee", 2.50, 1, true, null);
-        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, true, null);
+        MenuItem espresso = new MenuItem("Espresso", "Strong black coffee", 2.50, 1, null);
+        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, null);
         String[] sortingFields = {"name", "price"};
         String[] directions = {"asc", "desc"};
 
@@ -62,7 +62,7 @@ class MenuItemServiceTest {
 
     @Test
     void testReadMenuItemById_Correct() {
-        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, true, null);
+        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, null);
 
         when(menuItemRepository.findById(1)).thenReturn(Optional.of(cappuccino));
         MenuItem result = menuItemService.getMenuItemById(1);
@@ -89,7 +89,7 @@ class MenuItemServiceTest {
 
     @Test
     void testCreateMenuItem() {
-        MenuItem menuItem = new MenuItem("Latte", "Espresso with steamed milk", 4.00, 1, true, null);
+        MenuItem menuItem = new MenuItem("Latte", "Espresso with steamed milk", 4.00, 1, null);
 
         when(menuItemRepository.save(menuItem)).thenReturn(menuItem);
         MenuItem result = menuItemService.createMenuItem(menuItem);
@@ -101,8 +101,8 @@ class MenuItemServiceTest {
 
     @Test
     void testUpdateMenuItem_Correct() {
-        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, true, null);
-        MenuItem updatedCappuccino = new MenuItem("Cappuccino", "Espresso with steamed, hot milk", 3.00, 1, true, null);
+        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, null);
+        MenuItem updatedCappuccino = new MenuItem("Cappuccino", "Espresso with steamed, hot milk", 3.00, 1, null);
 
         when(menuItemRepository.findById(1)).thenReturn(Optional.of(cappuccino));
         when(menuItemRepository.save(any(MenuItem.class))).thenReturn(updatedCappuccino);
@@ -116,7 +116,7 @@ class MenuItemServiceTest {
 
     @Test
     void testDeleteMenuItem_Correct() {
-        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, true, null);
+        MenuItem cappuccino = new MenuItem("Cappuccino", "Espresso with steamed milk", 3.00, 1, null);
 
         when(menuItemRepository.findById(1)).thenReturn(Optional.of(cappuccino));
         menuItemService.deleteMenuItem(1);

@@ -29,10 +29,6 @@ public class MenuItem {
 
     private Integer categoryId;
 
-    @Column(name="available")
-    @NotNull(message="Availability info is required")
-    private Boolean available;
-
     @Lob
     @Column(name = "image")
     private byte[] image;
@@ -57,12 +53,11 @@ public class MenuItem {
     public MenuItem() {
     }
 
-    public MenuItem(String name, String description, Double price, Integer categoryId, Boolean available, byte[] image) {
+    public MenuItem(String name, String description, Double price, Integer categoryId, byte[] image) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.categoryId = categoryId;
-        this.available = available;
         this.image = image;
     }
 
@@ -106,14 +101,6 @@ public class MenuItem {
         this.categoryId = categoryId;
     }
 
-    public Boolean isAvailable() {
-        return available;
-    }
-
-    public void setAvailable(Boolean available) {
-        this.available = available;
-    }
-
     public byte[] getImage() { return image; }
 
     public void setImage(byte[] image) { this.image = image; }
@@ -142,7 +129,6 @@ public class MenuItem {
                 ", description='" + description + '\'' +
                 ", price=" + price +
                 ", categoryId=" + categoryId +
-                ", available=" + available +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';

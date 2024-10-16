@@ -39,6 +39,14 @@ public class MenuItemController {
         MenuItem menuItem = this.menuItemService.getMenuItemById(id);
         return ResponseEntity.ok(menuItem);
     }
+    @GetMapping("/{id}/price")
+    public ResponseEntity<Double> getMenuItemPriceById(@PathVariable Integer id){
+        if(id < 0)
+            throw new InvalidInputException("Invalid id: " + id + " provided.");
+
+        MenuItem menuItem = this.menuItemService.getMenuItemById(id);
+        return ResponseEntity.ok(menuItem.getPrice());
+    }
 
     @GetMapping("/filter/category-name")
     public ResponseEntity<PaginatedResponse<MenuItem>> getMenuItemsByCategoryName(
@@ -71,14 +79,6 @@ public class MenuItemController {
 
         MenuItem updatedMenuItem = this.menuItemService.updateMenuItem(id, menuItem);
         return ResponseEntity.ok(updatedMenuItem);
-    }
-
-    @PatchMapping("/{id}/availability")
-    public ResponseEntity<Void> updateMenuItemAvailability(@PathVariable Integer id, @RequestBody Boolean available) {
-        MenuItem menuItem = menuItemService.getMenuItemById(id);
-        menuItem.setAvailable(available);
-        menuItemService.updateMenuItem(id, menuItem);
-        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
