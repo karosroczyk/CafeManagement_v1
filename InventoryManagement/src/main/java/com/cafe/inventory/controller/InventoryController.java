@@ -40,6 +40,15 @@ public class InventoryController {
         return ResponseEntity.ok(inventoryItem);
     }
 
+    @GetMapping("/{menuItemId}/availability")
+    public ResponseEntity<Boolean> getInventoryItemAvailabilityByMenuItemId(@PathVariable Integer menuItemId){
+        if(menuItemId < 0)
+            throw new InvalidInputException("Invalid id: " + menuItemId + " provided.");
+
+        InventoryItem inventoryItem = this.inventoryService.getInventoryItemByMenuItemId(menuItemId);
+        return ResponseEntity.ok(inventoryItem.isAvailable());
+    }
+
     @PostMapping
     public ResponseEntity<InventoryItem> createMenuItem(@Valid @RequestBody InventoryItem inventoryItem, BindingResult result){
         if (result.hasErrors()) {
@@ -63,13 +72,13 @@ public class InventoryController {
         return ResponseEntity.ok(updatedInventoryItem);
     }
 
-    @PutMapping("/{id}/reduce")
-    public ResponseEntity<InventoryItem> reduceStock(
-            @PathVariable Integer id, @RequestBody Integer quantity){
-        if (id < 0 || quantity < 0)
-            throw new InvalidInputException("Invalid id: " + id + " or quantity " + quantity + " provided.");
+    @PutMapping("/{menuItemId}/reduce")
+    public ResponseEntity<InventoryItem> reduceStockByMenuItemId(
+            @PathVariable Integer menuItemId, @RequestBody Integer quantity){
+        if (menuItemId < 0 || quantity < 0)
+            throw new InvalidInputException("Invalid id: " + menuItemId + " or quantity " + quantity + " provided.");
 
-        InventoryItem updatedInventoryItem = this.inventoryService.reduceStock(id, quantity);
+        InventoryItem updatedInventoryItem = this.inventoryService.reduceStockByMenuItemId(menuItemId, quantity);
         return ResponseEntity.ok(updatedInventoryItem);
     }
 

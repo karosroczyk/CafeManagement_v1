@@ -27,8 +27,6 @@ import java.util.stream.IntStream;
 public class InventoryServiceImpl implements InventoryService {
     private final InventoryDAOJPA inventoryDAOJPA;
     private final WebClient webClient;
-
-    // Base URL for the Menu Management Service
     @Value("${menu.service.url}")
     private String menuServiceUrl;
 
@@ -57,6 +55,11 @@ public class InventoryServiceImpl implements InventoryService {
     public InventoryItem getInventoryItemById(Integer id) {
         return this.inventoryDAOJPA.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("InventoryItem with id: " + id + " not found."));
+    }
+    @Override
+    public InventoryItem getInventoryItemByMenuItemId(Integer menuItemId) {
+        return this.inventoryDAOJPA.findByMenuItemId(menuItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("InventoryItem with id: " + menuItemId + " not found."));
     }
 
     @Override
@@ -98,8 +101,8 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
-    public InventoryItem reduceStock(Integer id, Integer quantity){
-        InventoryItem foundInventoryItem = this.getInventoryItemById(id);
+    public InventoryItem reduceStockByMenuItemId(Integer menuItemId, Integer quantity){
+        InventoryItem foundInventoryItem = this.getInventoryItemByMenuItemId(menuItemId);
         Integer updatedStock = foundInventoryItem.getStockLevel() - quantity;
 
         if (updatedStock < 0)
@@ -107,7 +110,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         if (updatedStock == 0) {
             foundInventoryItem.setAvailable(false);
-            updateMenuItemAvailability(id, false);
+            //updateMenuItemAvailability(id, false);
         }
 
         foundInventoryItem.setStockLevel(updatedStock);
