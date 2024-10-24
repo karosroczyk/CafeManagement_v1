@@ -9,6 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -36,6 +40,17 @@ public class OrderController {
 
         Order order = this.orderService.getOrderById(id);
         return ResponseEntity.ok(order);
+    }
+
+    @GetMapping("/menuitems")
+    public List<Map> getAvailableMenuItems(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "2") int size,
+            @RequestParam(defaultValue = "customerId") String[] sortBy,
+            @RequestParam(defaultValue = "asc") String[] direction
+    ) {
+        // Call the service method to fetch available menu items
+        return orderService.getAvailableMenuItems(page, size, sortBy, direction);
     }
 
     @PostMapping

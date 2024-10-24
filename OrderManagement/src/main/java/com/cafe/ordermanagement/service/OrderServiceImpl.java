@@ -14,12 +14,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 @Service
@@ -36,6 +38,31 @@ public class OrderServiceImpl implements OrderService{
     public OrderServiceImpl(OrderDAOJPA orderDAOJPA, WebClient webClient){
         this.orderDAOJPA = orderDAOJPA;
         this.webClient = webClient;
+    }
+
+    public List<Map> getAvailableMenuItems(int page, int size, String[] sortBy, String[] direction) {
+        List<Sort.Order> orders = IntStream.range(0, sortBy.length)
+                .mapToObj(i -> new Sort.Order(Sort.Direction.fromString(direction[i]), sortBy[i]))
+                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
+
+        var menuItems = webClient
+                .get()
+                .uri(menuServiceUrl + "/api/menuitems")
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> {
+                    System.err.println("Client error: " + response.statusCode());
+                    return Mono.error(new RuntimeException("Client error occurred"));
+                })
+                .onStatus(status -> status.is5xxServerError(), response -> {
+                    System.err.println("Server error: " + response.statusCode());
+                    return Mono.error(new RuntimeException("Server error occurred"));
+                })
+                .bodyToFlux(Map.class)
+                .collectList()
+                .block();
+
+        return menuItems;
     }
 
     //getAllAvailableItems
