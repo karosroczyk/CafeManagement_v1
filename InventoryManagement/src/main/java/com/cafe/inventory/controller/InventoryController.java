@@ -19,7 +19,7 @@ public class InventoryController {
     }
 
     @GetMapping
-    public ResponseEntity<PaginatedResponse<InventoryItem>> getAllInventory(
+    public ResponseEntity<PaginatedResponse<InventoryItem>> getAllInventoryItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "menuItemId") String[] sortBy,

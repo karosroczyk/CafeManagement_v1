@@ -43,7 +43,7 @@ public class InventoryControllerTest {
         when(inventoryService.getAllInventoryItems(page, size, sortBy, direction)).thenReturn(paginatedResponse);
 
         // Act
-        ResponseEntity<PaginatedResponse<InventoryItem>> response = inventoryController.getAllInventory(page, size, sortBy, direction);
+        ResponseEntity<PaginatedResponse<InventoryItem>> response = inventoryController.getAllInventoryItems(page, size, sortBy, direction);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -61,7 +61,7 @@ public class InventoryControllerTest {
 
         // Act & Assert
         assertThrows(InvalidInputException.class, () -> {
-            inventoryController.getAllInventory(page, size, sortBy, direction);
+            inventoryController.getAllInventoryItems(page, size, sortBy, direction);
         });
     }
 

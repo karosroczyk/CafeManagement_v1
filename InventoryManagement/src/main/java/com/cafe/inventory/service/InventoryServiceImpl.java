@@ -110,34 +110,10 @@ public class InventoryServiceImpl implements InventoryService {
 
         if (updatedStock == 0) {
             foundInventoryItem.setAvailable(false);
-            //updateMenuItemAvailability(id, false);
         }
 
         foundInventoryItem.setStockLevel(updatedStock);
         return this.inventoryDAOJPA.save(foundInventoryItem);
-    }
-
-    private void updateMenuItemAvailability(Integer menuItemId, Boolean availability) {
-        String url = menuServiceUrl + "/api/menuitems/" + menuItemId + "/availability";
-
-        try {
-            webClient.patch()
-                    .uri(url)
-                    .bodyValue(availability)
-                    .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), response -> {
-                        System.err.println("Client error: " + response.statusCode());
-                        return Mono.error(new RuntimeException("Client error occurred"));
-                    })
-                    .onStatus(status -> status.is5xxServerError(), response -> {
-                        System.err.println("Server error: " + response.statusCode());
-                        return Mono.error(new RuntimeException("Server error occurred"));
-                    })
-                    .toBodilessEntity()
-                    .block();
-        } catch (Exception e) {
-            System.err.println("Unexpected error: " + e.getMessage());
-        }
     }
 
     @Override
