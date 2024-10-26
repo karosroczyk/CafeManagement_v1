@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -54,6 +55,8 @@ public class Order {
     }
 
     public Order() {
+        this.status = "PENDING";
+        this.total_price = 0.0;
         this.menuItems = new ArrayList<>();
     }
 
@@ -61,6 +64,7 @@ public class Order {
         this.status = status;
         this.total_price = total_price;
         this.customerId = customerId;
+        this.menuItems = new ArrayList<>();
     }
     public void addMenuItem(OrderMenuItemId menuItem) {
         if (menuItems == null) {

@@ -1,5 +1,6 @@
 package com.cafe.ordermanagement.service;
 
+import com.cafe.ordermanagement.dto.MenuItem;
 import com.cafe.ordermanagement.entity.OrderMenuItemId;
 import com.cafe.ordermanagement.entity.OrderMenuItemIdKey;
 import com.cafe.ordermanagement.exception.DatabaseUniqueValidationException;
@@ -9,19 +10,19 @@ import com.cafe.ordermanagement.entity.Order;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 @Service
@@ -40,15 +41,16 @@ public class OrderServiceImpl implements OrderService{
         this.webClient = webClient;
     }
 
-    public List<Map> getAvailableMenuItems(int page, int size, String[] sortBy, String[] direction) {
-        List<Sort.Order> orders = IntStream.range(0, sortBy.length)
-                .mapToObj(i -> new Sort.Order(Sort.Direction.fromString(direction[i]), sortBy[i]))
-                .toList();
-        Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
+        public PaginatedResponse<MenuItem> getAvailableMenuItems(int page, int size, String[] sortBy, String[] direction) {
+            String uri = UriComponentsBuilder.fromHttpUrl(menuServiceUrl + "/api/menuitems")
+                    .queryParam("page", page)
+                    .queryParam("size", size)
+                    .queryParam("sortBy", (Object[]) sortBy)
+                    .queryParam("direction", (Object[]) direction)
+                    .toUriString();
 
-        var menuItems = webClient
-                .get()
-                .uri(menuServiceUrl + "/api/menuitems")
+            PaginatedResponse<MenuItem> menuItems = webClient.get()
+                .uri(uri)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> {
                     System.err.println("Client error: " + response.statusCode());
@@ -58,8 +60,7 @@ public class OrderServiceImpl implements OrderService{
                     System.err.println("Server error: " + response.statusCode());
                     return Mono.error(new RuntimeException("Server error occurred"));
                 })
-                .bodyToFlux(Map.class)
-                .collectList()
+                .bodyToMono(new ParameterizedTypeReference<PaginatedResponse<MenuItem>>() {})
                 .block();
 
         return menuItems;
@@ -75,61 +76,58 @@ public class OrderServiceImpl implements OrderService{
     //TODO: add possibility to place order for many of the same menuitem
     @Override
     @Transactional
-    public Order placeOrder(Order order) {
+    public Order placeOrder(List<Integer> menuItemIds, Order order) {
         String urlMenuService = menuServiceUrl + "/api/menuitems";
         String urlInventoryService = inventoryServiceUrl + "/api/inventory";
 
         Order placedOrder = createOrder(order);
+        menuItemIds.stream().forEach(id -> {
+            OrderMenuItemId menuItem = new OrderMenuItemId(
+                    new OrderMenuItemIdKey(placedOrder.getId(), id));
+            placedOrder.addMenuItem(menuItem);
+        });
 
-        OrderMenuItemId menuItem1 = new OrderMenuItemId(new OrderMenuItemIdKey(placedOrder.getId(), 1));
-        placedOrder.addMenuItem(menuItem1);
+        if (placedOrder.getMenuItems() != null && !placedOrder.getMenuItems().isEmpty()) {
+            List<Boolean> areAvailable = webClient.get()
+                    .uri(urlInventoryService + "/availability",
+                            uriBuilder -> uriBuilder.queryParam("menuItemIds", menuItemIds).build())
+                    .retrieve()
+                    .onStatus(status -> status.is4xxClientError(), response -> {
+                        System.err.println("Client error: " + response.statusCode());
+                        return Mono.error(new RuntimeException("Client error occurred"));
+                    })
+                    .onStatus(status -> status.is5xxServerError(), response -> {
+                        System.err.println("Server error: " + response.statusCode());
+                        return Mono.error(new RuntimeException("Server error occurred"));
+                    })
+                    .bodyToMono(new ParameterizedTypeReference<List<Boolean>>() {})
+                    .block();
 
-        OrderMenuItemId menuItem2 = new OrderMenuItemId(new OrderMenuItemIdKey(placedOrder.getId(), 2));
-        placedOrder.addMenuItem(menuItem2);
+            IntStream.range(0, areAvailable.size())
+                    .filter(i -> !areAvailable.get(i))
+                    .findFirst()
+                    .ifPresent(i -> {
+                        throw new ResourceNotFoundException("Menu item with ID: " +
+                                placedOrder.getMenuItems().get(i).getOrderMenuItemIdKey().getMenuItemId() + " is not available.");
+                    });
 
-
-            if (placedOrder.getMenuItems() != null && !placedOrder.getMenuItems().isEmpty()) {
-                placedOrder.getMenuItems().forEach(menuItemId -> {
-                    if (menuItemId != null) {
-                        Boolean isAvailable = webClient
-                                .get()
-                                .uri(urlInventoryService + "/" + menuItemId.getOrderMenuItemIdKey().getMenuItemId() + "/availability")
-                                .retrieve()
-                                .onStatus(status -> status.is4xxClientError(), response -> {
-                                    System.err.println("Client error: " + response.statusCode());
-                                    return Mono.error(new RuntimeException("Client error occurred"));
-                                })
-                                .onStatus(status -> status.is5xxServerError(), response -> {
-                                    System.err.println("Server error: " + response.statusCode());
-                                    return Mono.error(new RuntimeException("Server error occurred"));
-                                })
-                                .bodyToMono(Boolean.class)
-                                .block();
-                        if (!isAvailable)
-                            throw new ResourceNotFoundException("Menu item with ID " + menuItemId.getOrderMenuItemIdKey().getMenuItemId() + " is not available.");
-
-                        // Step 3: Reduce the stock for the available menu item
-                        webClient
-                                .put()
-                                .uri(urlInventoryService + "/" + menuItemId.getOrderMenuItemIdKey().getMenuItemId() + "/reduce")
-                                .bodyValue(1)  // Assuming quantity is 1 for now
-                                .retrieve()
-                                .onStatus(status -> status.is4xxClientError(), response -> {
-                                    System.err.println("Client error: " + response.statusCode());
-                                    return Mono.error(new RuntimeException("Client error occurred"));
-                                })
-                                .onStatus(status -> status.is5xxServerError(), response -> {
-                                    System.err.println("Server error: " + response.statusCode());
-                                    return Mono.error(new RuntimeException("Server error occurred"));
-                                })
-                                .bodyToMono(Void.class)
-                                .block();
-                    } else
-                        throw new ResourceNotFoundException("Menu item ID cannot be null.");
-                });
-            } else
-                throw new ResourceNotFoundException("Order must contain at least one menu item.");
-
+//                        // Step 3: Reduce the stock for the available menu item
+//                        webClient.put()
+//                                .uri(urlInventoryService + "/" + menuItemId.getOrderMenuItemIdKey().getMenuItemId() + "/reduce")
+//                                .bodyValue(1)  // Assuming quantity is 1 for now
+//                                .retrieve()
+//                                .onStatus(status -> status.is4xxClientError(), response -> {
+//                                    System.err.println("Client error: " + response.statusCode());
+//                                    return Mono.error(new RuntimeException("Client error occurred"));
+//                                })
+//                                .onStatus(status -> status.is5xxServerError(), response -> {
+//                                    System.err.println("Server error: " + response.statusCode());
+//                                    return Mono.error(new RuntimeException("Server error occurred"));
+//                                })
+//                                .bodyToMono(Void.class)
+//                                .block();
+        } else
+            throw new ResourceNotFoundException("Choose at least one Menu Item.");
 
         double totalPrice = placedOrder.getMenuItems().stream()
                 .mapToDouble(menuItemId -> {

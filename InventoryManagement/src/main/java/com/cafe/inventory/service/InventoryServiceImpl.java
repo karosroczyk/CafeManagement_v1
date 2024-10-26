@@ -21,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 @Service
@@ -57,9 +58,20 @@ public class InventoryServiceImpl implements InventoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("InventoryItem with id: " + id + " not found."));
     }
     @Override
-    public InventoryItem getInventoryItemByMenuItemId(Integer menuItemId) {
-        return this.inventoryDAOJPA.findByMenuItemId(menuItemId)
-                .orElseThrow(() -> new ResourceNotFoundException("InventoryItem with id: " + menuItemId + " not found."));
+    public List<InventoryItem> getInventoryItemsByMenuItemIds(List<Integer> menuItemIds) {
+        List<Optional<InventoryItem>> optionalinventoryItems = menuItemIds.stream()
+                .map(menuItemId -> this.inventoryDAOJPA.findByMenuItemId(menuItemId)).toList();
+
+        Boolean check = optionalinventoryItems.stream().anyMatch(id -> id.isEmpty());
+        if(check) throw new ResourceNotFoundException("InventoryItem with id not found.");
+
+        return optionalinventoryItems.stream().map(Optional::get).toList();
+    }
+
+    @Override
+    public List<Boolean> areInventoryItemsByMenuItemIdsAvailable(List<Integer> menuItemIds) {
+        List<InventoryItem> inventoryItemsByMenuItemsIds = this.getInventoryItemsByMenuItemIds(menuItemIds);
+        return inventoryItemsByMenuItemsIds.stream().map(id -> id.isAvailable()).toList();
     }
 
     @Override
@@ -99,22 +111,22 @@ public class InventoryServiceImpl implements InventoryService {
         }
     }
 
-    @Override
-    @Transactional
-    public InventoryItem reduceStockByMenuItemId(Integer menuItemId, Integer quantity){
-        InventoryItem foundInventoryItem = this.getInventoryItemByMenuItemId(menuItemId);
-        Integer updatedStock = foundInventoryItem.getStockLevel() - quantity;
-
-        if (updatedStock < 0)
-            throw new InvalidInputException("Not enough stock to reduce.");
-
-        if (updatedStock == 0) {
-            foundInventoryItem.setAvailable(false);
-        }
-
-        foundInventoryItem.setStockLevel(updatedStock);
-        return this.inventoryDAOJPA.save(foundInventoryItem);
-    }
+//    @Override
+//    @Transactional
+//    public InventoryItem reduceStockByMenuItemId(Integer menuItemId, Integer quantity){
+//        InventoryItem foundInventoryItem = this.getInventoryItemByMenuItemId(menuItemId);
+//        Integer updatedStock = foundInventoryItem.getStockLevel() - quantity;
+//
+//        if (updatedStock < 0)
+//            throw new InvalidInputException("Not enough stock to reduce.");
+//
+//        if (updatedStock == 0) {
+//            foundInventoryItem.setAvailable(false);
+//        }
+//
+//        foundInventoryItem.setStockLevel(updatedStock);
+//        return this.inventoryDAOJPA.save(foundInventoryItem);
+//    }
 
     @Override
     @Transactional

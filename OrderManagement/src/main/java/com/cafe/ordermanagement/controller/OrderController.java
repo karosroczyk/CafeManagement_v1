@@ -1,5 +1,6 @@
 package com.cafe.ordermanagement.controller;
 
+import com.cafe.ordermanagement.dto.MenuItem;
 import com.cafe.ordermanagement.entity.Order;
 import com.cafe.ordermanagement.exception.InvalidInputException;
 import com.cafe.ordermanagement.service.OrderService;
@@ -9,10 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -43,14 +40,14 @@ public class OrderController {
     }
 
     @GetMapping("/menuitems")
-    public List<Map> getAvailableMenuItems(
+    public ResponseEntity<PaginatedResponse<MenuItem>> getAvailableMenuItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "2") int size,
             @RequestParam(defaultValue = "customerId") String[] sortBy,
             @RequestParam(defaultValue = "asc") String[] direction
     ) {
-        // Call the service method to fetch available menu items
-        return orderService.getAvailableMenuItems(page, size, sortBy, direction);
+        PaginatedResponse<MenuItem> menuitems = orderService.getAvailableMenuItems(page, size, sortBy, direction);
+        return ResponseEntity.ok(menuitems);
     }
 
     @PostMapping
@@ -63,15 +60,15 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
     }
 
-    @PostMapping("/placeOrder")
-    public ResponseEntity<Order> placeOrder(@Valid @RequestBody Order order, BindingResult result){
-        if (result.hasErrors()) {
-            throw new InvalidInputException(result.getFieldError().getDefaultMessage());
-        }
-
-        Order createdOrder = this.orderService.placeOrder(order);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
-    }
+//    @PostMapping("/placeOrder")
+//    public ResponseEntity<Order> placeOrder(@Valid @RequestBody Order order, BindingResult result){
+//        if (result.hasErrors()) {
+//            throw new InvalidInputException(result.getFieldError().getDefaultMessage());
+//        }
+//
+//        Order createdOrder = this.orderService.placeOrder(order);
+//        return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
+//    }
 
     @PutMapping("/{id}")
     public ResponseEntity<Order> updateOrder(

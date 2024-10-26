@@ -1,7 +1,9 @@
 package com.cafe.ordermanagement.controller;
 
-import com.cafe.ordermanagement.dao.OrderDAOJPA;
+import com.cafe.ordermanagement.dto.MenuItem;
 import com.cafe.ordermanagement.entity.Order;
+import com.cafe.ordermanagement.entity.OrderMenuItemId;
+import com.cafe.ordermanagement.entity.OrderMenuItemIdKey;
 import com.cafe.ordermanagement.exception.InvalidInputException;
 import com.cafe.ordermanagement.service.OrderService;
 import com.cafe.ordermanagement.service.PaginatedResponse;
@@ -13,7 +15,9 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequestMapping("/orders")
@@ -44,10 +48,10 @@ public class OrderControllerMVC {
         }
 
         PaginatedResponse<Order> orders = this.orderService.getAllOrders(page, size, sortBy, direction);
-        model.addAttribute("orders", orders.getData()); // Add orders to the model for Thymeleaf to render
+        model.addAttribute("orders", orders.getData());
         model.addAttribute("currentPage", orders.getCurrentPage());
         model.addAttribute("totalPages", orders.getTotalPages());
-        return "orders/list"; // Return the Thymeleaf view name
+        return "orders/list";
     }
 
     @GetMapping("/{id}")
@@ -64,32 +68,47 @@ public class OrderControllerMVC {
     @GetMapping("/menuitems")
     public String showAllMenuItems(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "customerId") String[] sortBy,
+            @RequestParam(defaultValue = "2") int size,
+            @RequestParam(defaultValue = "name") String[] sortBy,
             @RequestParam(defaultValue = "asc") String[] direction,
             Model model) {
         if (page < 0 || size <= 0 || sortBy.length != direction.length) {
             throw new InvalidInputException("Invalid page: " + page + ", size: " + size + " provided.");
         }
 
-        var menuItems = orderService.getAvailableMenuItems(page, size, sortBy, direction);
-        model.addAttribute("menuItems", menuItems);
+        PaginatedResponse<MenuItem> menuItems = orderService.getAvailableMenuItems(page, size, sortBy, direction);
+        model.addAttribute("menuItems", menuItems.getData());
+        model.addAttribute("currentPage", menuItems.getCurrentPage());
+        model.addAttribute("totalPages", menuItems.getTotalPages());
         return "orders/menuitems";
     }
 
     @GetMapping("/new")
-    public String showCreateOrderForm(Model model) {
+    public String showCreateOrderForm(@RequestParam(defaultValue = "0") int page,
+                                  @RequestParam(defaultValue = "20") int size,
+                                  @RequestParam(defaultValue = "name") String[] sortBy,
+                                  @RequestParam(defaultValue = "asc") String[] direction,
+                                  Model model) {
+        if (page < 0 || size <= 0 || sortBy.length != direction.length) {
+            throw new InvalidInputException("Invalid page: " + page + ", size: " + size + " provided.");
+        }
+
         model.addAttribute("order", new Order()); // Create a blank form with an empty Order object
+        PaginatedResponse<MenuItem> menuItems = orderService.getAvailableMenuItems(page, size, sortBy, direction);
+        model.addAttribute("menuItems", menuItems.getData());
+        model.addAttribute("currentPage", menuItems.getCurrentPage());
+        model.addAttribute("totalPages", menuItems.getTotalPages());
         return "orders/create"; // View for the order creation form
     }
 
     @PostMapping
-    public String createOrder(@Valid @ModelAttribute("order") Order order, BindingResult result, Model model) {
+    public String createOrder(@Valid @ModelAttribute("order") Order order,
+                              @RequestParam(required = false) List<Integer> menuItemIds, BindingResult result, Model model) {
         if (result.hasErrors()) {
             return "orders/create"; // Return the same form with validation errors
         }
 
-        Order createdOrder = this.orderService.createOrder(order);
+        Order createdOrder = this.orderService.placeOrder(menuItemIds, order);
         return "redirect:/orders/" + createdOrder.getId(); // Redirect to the newly created order's detail page
     }
 
