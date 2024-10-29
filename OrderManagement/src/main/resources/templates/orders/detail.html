@@ -63,12 +63,14 @@
             <tr>
                 <th>Order ID</th>
                 <th>Menu Item ID</th>
+                <th>Quantity</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="menuItem : ${order.menuItems}">
                 <td th:text="${menuItem.orderMenuItemIdKey.orderId}"></td>
                 <td th:text="${menuItem.orderMenuItemIdKey.menuItemId}"></td>
+                <td th:text="${menuItem.orderMenuItemIdKey.quantity}"></td>
             </tr>
             </tbody>
         </table>

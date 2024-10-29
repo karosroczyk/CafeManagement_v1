@@ -7,39 +7,61 @@
 <body class="container mt-5">
 <h1 class="mb-4 text-center">Create New Order</h1>
 
-<!-- Menu Items Table -->
-<form th:action="@{/orders}" th:object="${order}" method="post">
+<form th:action="@{/orders}" th:object="${newOrder}" method="post">
     <table class="table table-hover table-striped">
         <thead class="thead-dark">
         <tr>
-            <th>Choose</th>
             <th>Name</th>
             <th>Description</th>
             <th>Price</th>
+            <th>Choose</th>
+            <th>Quantity</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="menuItem : ${menuItems}">
-            <td>
-                <input type="checkbox" th:name="menuItemIds" th:value="${menuItem.item_id}">
-            </td>
             <td th:text="${menuItem.name}"></td>
             <td th:text="${menuItem.description}"></td>
             <td th:text="${menuItem.price}"></td>
+            <td>
+                <input type="checkbox" th:name="menuItemIds" th:value="${menuItem.item_id}"
+                       onclick="updateQuantity(this)">
+            </td>
+            <td>
+                <input type="number" th:name="quantitiesOfMenuItems" th:value="0" min="0"
+                       class="form-control form-control-sm quantity-input"
+                       style="width: 60px;" placeholder="0" />
+            </td>
         </tr>
         </tbody>
     </table>
 
+    <script>
+    function updateQuantity(checkbox) {
+        // Get the associated quantity input field in the same row
+        const quantityInput = checkbox.closest('tr').querySelector('.quantity-input');
+
+        // Check if the checkbox is checked or unchecked
+        if (checkbox.checked) {
+            // Increase the quantity to 1 if it was 0
+            quantityInput.value = quantityInput.value === "0" ? "1" : quantityInput.value;
+        } else {
+            // Reset the quantity to 0 if unchecked
+            quantityInput.value = "0";
+        }
+    }
+</script>
+
     <nav aria-label="Page navigation example" class="mt-4">
         <ul class="pagination justify-content-center">
             <li class="page-item" th:if="${currentPage > 0}">
-                <a class="page-link" th:href="@{/orders/new(page=${currentPage - 1})}">Previous</a>
+                <a class="page-link" th:href="@{/orders/newOrder(page=${currentPage - 1})}">Previous</a>
             </li>
             <li class="page-item disabled">
                 <a class="page-link" th:text="'Page ' + ${currentPage + 1} + ' of ' + ${totalPages}"></a>
             </li>
             <li class="page-item" th:if="${currentPage < totalPages - 1}">
-                <a class="page-link" th:href="@{/orders/new(page=${currentPage + 1})}">Next</a>
+                <a class="page-link" th:href="@{/orders/newOrder(page=${currentPage + 1})}">Next</a>
             </li>
         </ul>
     </nav>

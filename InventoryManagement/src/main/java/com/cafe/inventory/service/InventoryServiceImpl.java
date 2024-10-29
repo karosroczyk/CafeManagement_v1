@@ -20,7 +20,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -69,9 +71,12 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    public List<Boolean> areInventoryItemsByMenuItemIdsAvailable(List<Integer> menuItemIds) {
-        List<InventoryItem> inventoryItemsByMenuItemsIds = this.getInventoryItemsByMenuItemIds(menuItemIds);
-        return inventoryItemsByMenuItemsIds.stream().map(id -> id.isAvailable()).toList();
+    public List<Boolean> areInventoryItemsByMenuItemIdsAvailable(List<Integer> menuItemIds, List<Integer> quantitiesOfMenuItems) {
+        List<InventoryItem> inventoryItemsByMenuItemsIds =
+                this.getInventoryItemsByMenuItemIds(menuItemIds);
+        return inventoryItemsByMenuItemsIds.stream().map(inventoryItem ->
+            (inventoryItem.isAvailable() &&
+                    inventoryItem.getStockLevel() >= quantitiesOfMenuItems.get(menuItemIds.indexOf(inventoryItem.getMenuItemId())))).toList();
     }
 
     @Override
@@ -109,6 +114,27 @@ public class InventoryServiceImpl implements InventoryService {
         } catch (DataIntegrityViolationException e) {
             throw new DatabaseUniqueValidationException(e.getRootCause().getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public List<InventoryItem> reduceStockByMenuItemId(List<Integer> menuItemIds, List<Integer> quantitiesOfMenuItems){
+        List<InventoryItem> savedInventoryItems = new ArrayList<>();
+        List<InventoryItem> foundInventoryItems = this.getInventoryItemsByMenuItemIds(menuItemIds);
+        foundInventoryItems.stream().forEach(foundInventoryItem -> {
+            Integer updatedStock =
+                    foundInventoryItem.getStockLevel() - quantitiesOfMenuItems.get(foundInventoryItems.indexOf(foundInventoryItem));
+
+            if (updatedStock < 0)
+                throw new InvalidInputException("Not enough stock to reduce.");
+
+            if (updatedStock == 0)
+                foundInventoryItem.setAvailable(false);
+
+            foundInventoryItem.setStockLevel(updatedStock);
+            savedInventoryItems.add(this.inventoryDAOJPA.save(foundInventoryItem));
+        });
+        return savedInventoryItems;
     }
 
 //    @Override

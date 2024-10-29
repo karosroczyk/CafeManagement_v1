@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -43,12 +45,14 @@ public class InventoryController {
     }
 
     @GetMapping("/availability")
-    public ResponseEntity<List<Boolean>> getInventoryItemAvailabilityByMenuItemIds(@RequestParam List<Integer> menuItemIds){
-        Boolean areMenuItemsIdsValid = menuItemIds.stream().anyMatch(id -> id < 0);
-        if(areMenuItemsIdsValid)
-            throw new InvalidInputException("Invalid id provided. Less then 0.");
+    public ResponseEntity<List<Boolean>> getInventoryItemAvailabilityByMenuItemIds
+            (@RequestParam List<Integer> menuItemIds, @RequestParam List<Integer> quantitiesOfMenuItems){
+        if (menuItemIds == null || menuItemIds.isEmpty() ||
+                quantitiesOfMenuItems == null || quantitiesOfMenuItems.isEmpty())
+            throw new InvalidInputException("Invalid id or quantity provided.");
 
-        List<Boolean> inventoryItems = this.inventoryService.areInventoryItemsByMenuItemIdsAvailable(menuItemIds);
+        List<Boolean> inventoryItems =
+                this.inventoryService.areInventoryItemsByMenuItemIdsAvailable(menuItemIds, quantitiesOfMenuItems);
         return ResponseEntity.ok(inventoryItems);
     }
 
@@ -75,15 +79,16 @@ public class InventoryController {
         return ResponseEntity.ok(updatedInventoryItem);
     }
 
-//    @PutMapping("/{menuItemId}/reduce")
-//    public ResponseEntity<InventoryItem> reduceStockByMenuItemId(
-//            @PathVariable Integer menuItemId, @RequestBody Integer quantity){
-//        if (menuItemId < 0 || quantity < 0)
-//            throw new InvalidInputException("Invalid id: " + menuItemId + " or quantity " + quantity + " provided.");
-//
-//        InventoryItem updatedInventoryItem = this.inventoryService.reduceStockByMenuItemId(menuItemId, quantity);
-//        return ResponseEntity.ok(updatedInventoryItem);
-//    }
+    @PutMapping("/reduce")
+    public ResponseEntity<List<InventoryItem>> reduceStockByMenuItemId(
+            @RequestParam List<Integer> menuItemIds, @RequestParam List<Integer> quantitiesOfMenuItems){
+        if (menuItemIds == null || menuItemIds.isEmpty() || quantitiesOfMenuItems == null || quantitiesOfMenuItems.isEmpty())
+            throw new InvalidInputException("Invalid id or quantity provided.");
+
+        List<InventoryItem> updatedInventoryItem = this.inventoryService.reduceStockByMenuItemId(
+                menuItemIds, quantitiesOfMenuItems);
+        return ResponseEntity.ok(updatedInventoryItem);
+    }
 
     @PutMapping("/{id}/add")
     public ResponseEntity<InventoryItem> addStock(

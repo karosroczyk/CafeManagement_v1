@@ -92,7 +92,6 @@ public class MenuItem {
     public void setPrice(Double price) {
         this.price = price;
     }
-
     public Integer getCategoryId() {
         return this.categoryId;
     }

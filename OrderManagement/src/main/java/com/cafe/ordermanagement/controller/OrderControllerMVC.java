@@ -2,8 +2,6 @@ package com.cafe.ordermanagement.controller;
 
 import com.cafe.ordermanagement.dto.MenuItem;
 import com.cafe.ordermanagement.entity.Order;
-import com.cafe.ordermanagement.entity.OrderMenuItemId;
-import com.cafe.ordermanagement.entity.OrderMenuItemIdKey;
 import com.cafe.ordermanagement.exception.InvalidInputException;
 import com.cafe.ordermanagement.service.OrderService;
 import com.cafe.ordermanagement.service.PaginatedResponse;
@@ -43,9 +41,8 @@ public class OrderControllerMVC {
             @RequestParam(defaultValue = "customerId") String[] sortBy,
             @RequestParam(defaultValue = "asc") String[] direction,
             Model model) {
-        if (page < 0 || size <= 0 || sortBy.length != direction.length) {
-            throw new InvalidInputException("Invalid page: " + page + ", size: " + size + " provided.");
-        }
+        if (page < 0 || size <= 0 || sortBy.length != direction.length)
+            throw new InvalidInputException("Invalid page: " + page + " or size: " + size + " provided.");
 
         PaginatedResponse<Order> orders = this.orderService.getAllOrders(page, size, sortBy, direction);
         model.addAttribute("orders", orders.getData());
@@ -56,98 +53,92 @@ public class OrderControllerMVC {
 
     @GetMapping("/{id}")
     public String getOrderById(@PathVariable Integer id, Model model) {
-        if (id < 0) {
+        if (id < 0)
             throw new InvalidInputException("Invalid id: " + id + " provided.");
-        }
 
         Order order = this.orderService.getOrderById(id);
         model.addAttribute("order", order);
-        return "orders/detail"; // View for showing order details
+        return "orders/detail";
     }
 
     @GetMapping("/menuitems")
-    public String showAllMenuItems(
+    public String getAllMenuItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "2") int size,
             @RequestParam(defaultValue = "name") String[] sortBy,
             @RequestParam(defaultValue = "asc") String[] direction,
             Model model) {
-        if (page < 0 || size <= 0 || sortBy.length != direction.length) {
-            throw new InvalidInputException("Invalid page: " + page + ", size: " + size + " provided.");
-        }
+        if (page < 0 || size <= 0 || sortBy.length != direction.length)
+            throw new InvalidInputException("Invalid page: " + page + " or size: " + size + " provided.");
 
-        PaginatedResponse<MenuItem> menuItems = orderService.getAvailableMenuItems(page, size, sortBy, direction);
+        PaginatedResponse<MenuItem> menuItems = orderService.getAllMenuItems(page, size, sortBy, direction);
         model.addAttribute("menuItems", menuItems.getData());
         model.addAttribute("currentPage", menuItems.getCurrentPage());
         model.addAttribute("totalPages", menuItems.getTotalPages());
         return "orders/menuitems";
     }
 
-    @GetMapping("/new")
-    public String showCreateOrderForm(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "20") int size,
-                                  @RequestParam(defaultValue = "name") String[] sortBy,
-                                  @RequestParam(defaultValue = "asc") String[] direction,
-                                  Model model) {
-        if (page < 0 || size <= 0 || sortBy.length != direction.length) {
-            throw new InvalidInputException("Invalid page: " + page + ", size: " + size + " provided.");
-        }
+    @GetMapping("/newOrder")
+    public String showPlaceOrderForm(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "name") String[] sortBy,
+            @RequestParam(defaultValue = "asc") String[] direction,
+            Model model) {
+        if (page < 0 || size <= 0 || sortBy.length != direction.length)
+            throw new InvalidInputException("Invalid page: " + page + " or size: " + size + " provided.");
 
-        model.addAttribute("order", new Order()); // Create a blank form with an empty Order object
-        PaginatedResponse<MenuItem> menuItems = orderService.getAvailableMenuItems(page, size, sortBy, direction);
+        PaginatedResponse<MenuItem> menuItems = orderService.getAllMenuItems(page, size, sortBy, direction);
+        model.addAttribute("newOrder", new Order());
         model.addAttribute("menuItems", menuItems.getData());
         model.addAttribute("currentPage", menuItems.getCurrentPage());
         model.addAttribute("totalPages", menuItems.getTotalPages());
-        return "orders/create"; // View for the order creation form
+        return "orders/create";
     }
 
     @PostMapping
-    public String createOrder(@Valid @ModelAttribute("order") Order order,
-                              @RequestParam(required = false) List<Integer> menuItemIds, BindingResult result, Model model) {
-        if (result.hasErrors()) {
-            return "orders/create"; // Return the same form with validation errors
-        }
+    public String placeOrder(
+            @Valid @ModelAttribute("order") Order order,
+            @RequestParam List<Integer> menuItemIds,
+            @RequestParam List<Integer> quantitiesOfMenuItems,
+            BindingResult result) {
+        if (result.hasErrors())
+            throw new InvalidInputException("Invalid Order provided: " + result.getFieldError().getDefaultMessage());
 
-        Order createdOrder = this.orderService.placeOrder(menuItemIds, order);
-        return "redirect:/orders/" + createdOrder.getId(); // Redirect to the newly created order's detail page
+        Order placedOrder = this.orderService.placeOrder(order, menuItemIds, quantitiesOfMenuItems);
+        return "redirect:/orders/" + placedOrder.getId();
     }
 
     @GetMapping("/edit/{id}")
     public String showUpdateOrderForm(@PathVariable Integer id, Model model) {
-        if (id < 0) {
+        if (id < 0)
             throw new InvalidInputException("Invalid id: " + id + " provided.");
-        }
 
         Order order = this.orderService.getOrderById(id);
         model.addAttribute("order", order);
-        return "orders/edit"; // View for the order update form
+        return "orders/edit";
     }
 
     @PostMapping("/update/{id}")
     public String updateOrder(
             @PathVariable Integer id,
             @Valid @ModelAttribute("order") Order order,
-            BindingResult result,
-            Model model) {
-        if (result.hasErrors()) {
-            return "orders/edit"; // Return the same form with validation errors
-        }
-
-        if (id < 0) {
+            BindingResult result) {
+        if (id < 0)
             throw new InvalidInputException("Invalid id: " + id + " provided.");
-        }
+        if (result.hasErrors())
+            throw new InvalidInputException("Invalid Order provided: " + result.getFieldError().getDefaultMessage());
 
         Order updatedOrder = this.orderService.updateOrder(id, order);
-        return "redirect:/orders/" + updatedOrder.getId(); // Redirect to the updated order's detail page
+        return "redirect:/orders/" + updatedOrder.getId();
     }
 
     @PostMapping("/delete/{id}")
     public String deleteOrder(@PathVariable Integer id) {
-        if (id < 0) {
+        if (id < 0)
             throw new InvalidInputException("Invalid id: " + id + " provided.");
-        }
 
         this.orderService.deleteOrder(id);
-        return "redirect:/orders"; // Redirect to the order list after deletion
+        return "redirect:/orders";
     }
 }
