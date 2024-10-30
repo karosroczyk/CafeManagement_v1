@@ -10,9 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -57,17 +55,16 @@ public class InventoryController {
     }
 
     @PostMapping
-    public ResponseEntity<InventoryItem> createMenuItem(@Valid @RequestBody InventoryItem inventoryItem, BindingResult result){
-        if (result.hasErrors()) {
+    public ResponseEntity<InventoryItem> createInventoryItem(@Valid @RequestBody InventoryItem inventoryItem, BindingResult result){
+        if (result.hasErrors())
             throw new InvalidInputException(result.getFieldError().getDefaultMessage());
-        }
 
         InventoryItem createdInventoryItem = this.inventoryService.createInventoryItem(inventoryItem);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdInventoryItem);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<InventoryItem> updateMenuItem(
+    public ResponseEntity<InventoryItem> updateInventoryItem(
             @PathVariable Integer id, @Valid @RequestBody InventoryItem inventoryItem, BindingResult result){
         if (result.hasErrors())
             throw new InvalidInputException("Invalid Inventory Item: " + result.getFieldError().getDefaultMessage() + " provided.");
@@ -101,7 +98,7 @@ public class InventoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<InventoryItem> deleteMenuItem(@PathVariable Integer id){
+    public ResponseEntity<InventoryItem> deleteInventoryItem(@PathVariable Integer id){
         if(id < 0)
             throw new InvalidInputException("Invalid id: " + id + " provided.");
 

@@ -1,10 +1,10 @@
 package com.cafe.ordermanagement.service;
 
 import com.cafe.ordermanagement.dto.MenuItem;
+import com.cafe.ordermanagement.entity.Category;
 import com.cafe.ordermanagement.entity.OrderMenuItemId;
 import com.cafe.ordermanagement.entity.OrderMenuItemIdKey;
-import com.cafe.ordermanagement.exception.DatabaseUniqueValidationException;
-import com.cafe.ordermanagement.exception.ResourceNotFoundException;
+import com.cafe.ordermanagement.exception.*;
 import com.cafe.ordermanagement.dao.OrderDAOJPA;
 import com.cafe.ordermanagement.entity.Order;
 import jakarta.annotation.PostConstruct;
@@ -34,6 +34,8 @@ public class OrderServiceImpl implements OrderService{
     private WebClient webClient;
     @Value("${menu.service.url}")
     private String menuServiceUrl;
+    @Value("${menu.service.url}")
+    private String menuServiceCategoryUrl;
     @Value("${inventory.service.url}")
     private String inventoryServiceUrl;
 
@@ -44,6 +46,7 @@ public class OrderServiceImpl implements OrderService{
     @PostConstruct
     private void init() {
         menuServiceUrl += "/api/menuitems";
+        menuServiceCategoryUrl += "/api/categories";
         inventoryServiceUrl += "/api/inventory";
     }
 
@@ -77,21 +80,87 @@ public class OrderServiceImpl implements OrderService{
                 .queryParam("direction", (Object[]) direction)
                 .toUriString();
 
-        PaginatedResponse<MenuItem> menuItems = webClient.get()
+        return webClient.get()
             .uri(uri)
             .retrieve()
-            .onStatus(status -> status.is4xxClientError(), response -> {
-                System.err.println("Client error: " + response.statusCode());
-                return Mono.error(new RuntimeException("Client error occurred"));
-            })
-            .onStatus(status -> status.is5xxServerError(), response -> {
-                System.err.println("Server error: " + response.statusCode());
-                return Mono.error(new RuntimeException("Server error occurred"));
-            })
+                .onStatus(
+                        status -> status.is4xxClientError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ClientErrorException("Client error: " + errorBody);}))
+                .onStatus(
+                        status -> status.is5xxServerError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ServerErrorException("Server error: " + errorBody);}))
             .bodyToMono(new ParameterizedTypeReference<PaginatedResponse<MenuItem>>() {})
             .block();
+    }
 
-        return menuItems;
+    @Override
+    public PaginatedResponse<Category> getAllMenuItemCategories(
+            int page, int size, String[] sortBy, String[] direction) {
+        String categoryUri = UriComponentsBuilder.fromHttpUrl(menuServiceCategoryUrl)
+                .queryParam("page", page)
+                .queryParam("size", size)
+                .queryParam("sortBy", (Object[]) sortBy)
+                .queryParam("direction", (Object[]) direction)
+                .toUriString();
+
+        return webClient.get()
+                .uri(categoryUri)
+                .retrieve()
+                .onStatus(
+                        status -> status.is4xxClientError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ClientErrorException("Client error: " + errorBody);
+                                }))
+                .onStatus(
+                        status -> status.is5xxServerError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ServerErrorException("Server error: " + errorBody);
+                                }))
+                .bodyToMono(new ParameterizedTypeReference<PaginatedResponse<Category>>() {
+                })
+                .block();
+    }
+
+    @Override
+    public PaginatedResponse<MenuItem> getAllMenuItemsByCategory(
+            int page, int size, String[] sortBy, String[] direction, String categoryName){
+        String uri = UriComponentsBuilder.fromHttpUrl(menuServiceUrl + "/filter/category-name")
+                .queryParam("page", page)
+                .queryParam("size", size)
+                .queryParam("sortBy", (Object[]) sortBy)
+                .queryParam("direction", (Object[]) direction)
+                .queryParam("categoryName", categoryName)
+                .toUriString();
+
+        return webClient.get()
+                .uri(uri)
+                .retrieve()
+                .onStatus(
+                        status -> status.is4xxClientError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ClientErrorException("Client error: " + errorBody);}))
+                .onStatus(
+                        status -> status.is5xxServerError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ServerErrorException("Server error: " + errorBody);}))
+                .bodyToMono(new ParameterizedTypeReference<PaginatedResponse<MenuItem>>() {})
+                .block();
+    }
+
+    @Override
+    public Map<String, List<MenuItem>> getMenuItemsGroupedByCategory(
+            int page, int size, String[] sortBy, String[] direction){
+        Map<String, List<MenuItem>> categorizedMenuItems = new LinkedHashMap<>();
+                List<Category> categories =
+                this.getAllMenuItemCategories(page, size, sortBy, direction).getData();
+
+        categories.stream().forEach(
+                category -> {categorizedMenuItems.put(
+                        category.getName(), this.getAllMenuItemsByCategory(page, size, sortBy, direction, category.getName()).getData());});
+
+        return categorizedMenuItems;
     }
 
     //getAllAvailableItems
@@ -130,14 +199,14 @@ public class OrderServiceImpl implements OrderService{
                         .queryParam("quantitiesOfMenuItems", filteredQuantities.toArray())
                         .toUriString())
                 .retrieve()
-                .onStatus(status -> status.is4xxClientError(), response -> {
-                    System.err.println("Client error: " + response.statusCode());
-                    return Mono.error(new RuntimeException("Client error occurred"));
-                })
-                .onStatus(status -> status.is5xxServerError(), response -> {
-                    System.err.println("Server error: " + response.statusCode());
-                    return Mono.error(new RuntimeException("Server error occurred"));
-                })
+                .onStatus(
+                        status -> status.is4xxClientError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ClientErrorException("Client error: " + errorBody);}))
+                .onStatus(
+                        status -> status.is5xxServerError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ServerErrorException("Server error: " + errorBody);}))
                 .bodyToMono(new ParameterizedTypeReference<List<Boolean>>() {})
                 .block();
 
@@ -156,14 +225,14 @@ public class OrderServiceImpl implements OrderService{
                         .queryParam("quantitiesOfMenuItems", filteredQuantities.toArray())
                         .toUriString())
                 .retrieve()
-                .onStatus(status -> status.is4xxClientError(), response -> {
-                    System.err.println("Client error: " + response.statusCode());
-                    return Mono.error(new RuntimeException("Client error occurred"));
-                })
-                .onStatus(status -> status.is5xxServerError(), response -> {
-                    System.err.println("Server error: " + response.toString());
-                    return Mono.error(new RuntimeException("Server error occurred"));
-                })
+                .onStatus(
+                        status -> status.is4xxClientError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ClientErrorException("Client error: " + errorBody);}))
+                .onStatus(
+                        status -> status.is5xxServerError(), response -> response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    throw new ServerErrorException("Server error: " + errorBody);}))
                 .bodyToMono(Void.class)
                 .block();
 

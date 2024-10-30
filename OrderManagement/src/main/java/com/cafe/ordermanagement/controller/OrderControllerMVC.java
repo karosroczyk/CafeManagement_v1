@@ -1,6 +1,7 @@
 package com.cafe.ordermanagement.controller;
 
 import com.cafe.ordermanagement.dto.MenuItem;
+import com.cafe.ordermanagement.entity.Category;
 import com.cafe.ordermanagement.entity.Order;
 import com.cafe.ordermanagement.exception.InvalidInputException;
 import com.cafe.ordermanagement.service.OrderService;
@@ -16,6 +17,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/orders")
@@ -61,20 +63,20 @@ public class OrderControllerMVC {
         return "orders/detail";
     }
 
-    @GetMapping("/menuitems")
-    public String getAllMenuItems(
+    @GetMapping("/menuitemsByCategories")
+    public String getAllMenuItemsByCategory(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "2") int size,
+            @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "name") String[] sortBy,
             @RequestParam(defaultValue = "asc") String[] direction,
             Model model) {
         if (page < 0 || size <= 0 || sortBy.length != direction.length)
             throw new InvalidInputException("Invalid page: " + page + " or size: " + size + " provided.");
 
-        PaginatedResponse<MenuItem> menuItems = orderService.getAllMenuItems(page, size, sortBy, direction);
-        model.addAttribute("menuItems", menuItems.getData());
-        model.addAttribute("currentPage", menuItems.getCurrentPage());
-        model.addAttribute("totalPages", menuItems.getTotalPages());
+        Map<String, List<MenuItem>> categorizedMenuItems =
+                this.orderService.getMenuItemsGroupedByCategory(page, size, sortBy, direction);
+
+        model.addAttribute("categorizedMenuItems", categorizedMenuItems);
         return "orders/menuitems";
     }
 
@@ -88,11 +90,11 @@ public class OrderControllerMVC {
         if (page < 0 || size <= 0 || sortBy.length != direction.length)
             throw new InvalidInputException("Invalid page: " + page + " or size: " + size + " provided.");
 
-        PaginatedResponse<MenuItem> menuItems = orderService.getAllMenuItems(page, size, sortBy, direction);
+        Map<String, List<MenuItem>> categorizedMenuItems =
+                this.orderService.getMenuItemsGroupedByCategory(page, size, sortBy, direction);
+
         model.addAttribute("newOrder", new Order());
-        model.addAttribute("menuItems", menuItems.getData());
-        model.addAttribute("currentPage", menuItems.getCurrentPage());
-        model.addAttribute("totalPages", menuItems.getTotalPages());
+        model.addAttribute("categorizedMenuItems", categorizedMenuItems);
         return "orders/create";
     }
 

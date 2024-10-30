@@ -100,7 +100,7 @@ public class InventoryControllerTest {
         when(inventoryService.createInventoryItem(inventoryItem)).thenReturn(inventoryItem);
 
         // Act
-        ResponseEntity<InventoryItem> response = inventoryController.createMenuItem(inventoryItem, result);
+        ResponseEntity<InventoryItem> response = inventoryController.createInventoryItem(inventoryItem, result);
 
         // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -118,7 +118,7 @@ public class InventoryControllerTest {
 
         // Act & Assert
         assertThrows(InvalidInputException.class, () -> {
-            inventoryController.createMenuItem(inventoryItem, result);
+            inventoryController.createInventoryItem(inventoryItem, result);
         });
     }
 
@@ -132,7 +132,7 @@ public class InventoryControllerTest {
         when(inventoryService.updateInventoryItem(id, inventoryItem)).thenReturn(inventoryItem);
 
         // Act
-        ResponseEntity<InventoryItem> response = inventoryController.updateMenuItem(id, inventoryItem, result);
+        ResponseEntity<InventoryItem> response = inventoryController.updateInventoryItem(id, inventoryItem, result);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -149,7 +149,7 @@ public class InventoryControllerTest {
 
         // Act & Assert
         assertThrows(InvalidInputException.class, () -> {
-            inventoryController.updateMenuItem(id, inventoryItem, result);
+            inventoryController.updateInventoryItem(id, inventoryItem, result);
         });
     }
 
@@ -160,7 +160,7 @@ public class InventoryControllerTest {
         doNothing().when(inventoryService).deleteInventoryItem(id);
 
         // Act
-        ResponseEntity<InventoryItem> response = inventoryController.deleteMenuItem(id);
+        ResponseEntity<InventoryItem> response = inventoryController.deleteInventoryItem(id);
 
         // Assert
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
@@ -173,7 +173,7 @@ public class InventoryControllerTest {
 
         // Act & Assert
         assertThrows(InvalidInputException.class, () -> {
-            inventoryController.deleteMenuItem(id);
+            inventoryController.deleteInventoryItem(id);
         });
     }
 }

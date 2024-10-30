@@ -34,8 +34,6 @@ public class Category {
         this.description = description;
     }
 
-    // Getters and Setters
-
     public Integer getId() {
         return id;
     }

@@ -64,8 +64,8 @@ public class InventoryServiceImpl implements InventoryService {
         List<Optional<InventoryItem>> optionalinventoryItems = menuItemIds.stream()
                 .map(menuItemId -> this.inventoryDAOJPA.findByMenuItemId(menuItemId)).toList();
 
-        Boolean check = optionalinventoryItems.stream().anyMatch(id -> id.isEmpty());
-        if(check) throw new ResourceNotFoundException("InventoryItem with id not found.");
+        Boolean isAnyInventoryItemEmpty = optionalinventoryItems.stream().anyMatch(id -> id.isEmpty());
+        if(isAnyInventoryItemEmpty) throw new ResourceNotFoundException("InventoryItem by MenuItemId not found.");
 
         return optionalinventoryItems.stream().map(Optional::get).toList();
     }
@@ -74,9 +74,8 @@ public class InventoryServiceImpl implements InventoryService {
     public List<Boolean> areInventoryItemsByMenuItemIdsAvailable(List<Integer> menuItemIds, List<Integer> quantitiesOfMenuItems) {
         List<InventoryItem> inventoryItemsByMenuItemsIds =
                 this.getInventoryItemsByMenuItemIds(menuItemIds);
-        return inventoryItemsByMenuItemsIds.stream().map(inventoryItem ->
-            (inventoryItem.isAvailable() &&
-                    inventoryItem.getStockLevel() >= quantitiesOfMenuItems.get(menuItemIds.indexOf(inventoryItem.getMenuItemId())))).toList();
+        return inventoryItemsByMenuItemsIds.stream().map(inventoryItem -> (inventoryItem.isAvailable() &&
+                inventoryItem.getStockLevel() >= quantitiesOfMenuItems.get(menuItemIds.indexOf(inventoryItem.getMenuItemId())))).toList();
     }
 
     @Override
@@ -136,23 +135,6 @@ public class InventoryServiceImpl implements InventoryService {
         });
         return savedInventoryItems;
     }
-
-//    @Override
-//    @Transactional
-//    public InventoryItem reduceStockByMenuItemId(Integer menuItemId, Integer quantity){
-//        InventoryItem foundInventoryItem = this.getInventoryItemByMenuItemId(menuItemId);
-//        Integer updatedStock = foundInventoryItem.getStockLevel() - quantity;
-//
-//        if (updatedStock < 0)
-//            throw new InvalidInputException("Not enough stock to reduce.");
-//
-//        if (updatedStock == 0) {
-//            foundInventoryItem.setAvailable(false);
-//        }
-//
-//        foundInventoryItem.setStockLevel(updatedStock);
-//        return this.inventoryDAOJPA.save(foundInventoryItem);
-//    }
 
     @Override
     @Transactional
