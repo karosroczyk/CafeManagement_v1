@@ -24,15 +24,12 @@ import java.util.Map;
 public class OrderControllerMVC {
 
     private final OrderService orderService;
-    @Autowired
-    private WebClient webClient;
     @Value("${menu.service.url}")
     private String menuServiceUrl;
     @Value("${inventory.service.url}")
     private String inventoryServiceUrl;
 
-    public OrderControllerMVC(OrderService orderService, WebClient webClient) {
-        this.webClient = webClient;
+    public OrderControllerMVC(OrderService orderService) {
         this.orderService = orderService;
     }
 

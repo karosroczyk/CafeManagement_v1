@@ -29,13 +29,11 @@ import java.util.stream.IntStream;
 @Service
 public class InventoryServiceImpl implements InventoryService {
     private final InventoryDAOJPA inventoryDAOJPA;
-    private final WebClient webClient;
     @Value("${menu.service.url}")
     private String menuServiceUrl;
 
-    public InventoryServiceImpl(InventoryDAOJPA inventoryDAOJPA, WebClient webClient) {
+    public InventoryServiceImpl(InventoryDAOJPA inventoryDAOJPA) {
         this.inventoryDAOJPA = inventoryDAOJPA;
-        this.webClient = webClient;
     }
     @Override
     public PaginatedResponse<InventoryItem> getAllInventoryItems(int page, int size, String[] sortBy, String[] direction) {

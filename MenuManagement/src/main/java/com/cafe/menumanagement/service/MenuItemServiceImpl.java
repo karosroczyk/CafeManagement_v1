@@ -4,7 +4,9 @@ import com.cafe.menumanagement.dao.MenuItemDAOJPA;
 import com.cafe.menumanagement.entity.MenuItem;
 import com.cafe.menumanagement.exception.DatabaseUniqueValidationException;
 import com.cafe.menumanagement.exception.ResourceNotFoundException;
+import com.netflix.discovery.EurekaClient;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,8 +20,13 @@ import java.util.stream.IntStream;
 @Service
 public class MenuItemServiceImpl implements MenuItemService{
     private final MenuItemDAOJPA menuItemDAOJPA;
-    public MenuItemServiceImpl(MenuItemDAOJPA menuItemDAOJPA){
+
+    @Autowired
+    private EurekaClient discoveryClient;
+    public MenuItemServiceImpl(MenuItemDAOJPA menuItemDAOJPA, EurekaClient discoveryClient){
+
         this.menuItemDAOJPA = menuItemDAOJPA;
+        this.discoveryClient = discoveryClient;
     }
     @Override
     public PaginatedResponse<MenuItem> getAllMenuItems(int page, int size, String[] sortBy, String[] direction) {

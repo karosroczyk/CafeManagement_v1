@@ -7,6 +7,7 @@ import com.cafe.ordermanagement.entity.OrderMenuItemIdKey;
 import com.cafe.ordermanagement.exception.*;
 import com.cafe.ordermanagement.dao.OrderDAOJPA;
 import com.cafe.ordermanagement.entity.Order;
+import com.netflix.discovery.EurekaClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,17 +32,20 @@ public class OrderServiceImpl implements OrderService{
     @Autowired
     private final OrderDAOJPA orderDAOJPA;
     @Autowired
-    private WebClient webClient;
+    private WebClient.Builder webClientBuilder;
     @Value("${menu.service.url}")
     private String menuServiceUrl;
     @Value("${menu.service.url}")
     private String menuServiceCategoryUrl;
     @Value("${inventory.service.url}")
     private String inventoryServiceUrl;
+    @Autowired
+    private EurekaClient discoveryClient;
 
-    public OrderServiceImpl(OrderDAOJPA orderDAOJPA, WebClient webClient){
+    public OrderServiceImpl(OrderDAOJPA orderDAOJPA, WebClient.Builder webClientBuilder, EurekaClient discoveryClient){
         this.orderDAOJPA = orderDAOJPA;
-        this.webClient = webClient;
+        this.webClientBuilder = webClientBuilder;
+        this.discoveryClient = discoveryClient;
     }
     @PostConstruct
     private void init() {
@@ -80,7 +84,7 @@ public class OrderServiceImpl implements OrderService{
                 .queryParam("direction", (Object[]) direction)
                 .toUriString();
 
-        return webClient.get()
+        return webClientBuilder.build().get()
             .uri(uri)
             .retrieve()
                 .onStatus(
@@ -98,14 +102,16 @@ public class OrderServiceImpl implements OrderService{
     @Override
     public PaginatedResponse<Category> getAllMenuItemCategories(
             int page, int size, String[] sortBy, String[] direction) {
-        String categoryUri = UriComponentsBuilder.fromHttpUrl(menuServiceCategoryUrl)
+        String url = discoveryClient.getNextServerFromEureka("menu", false).getHomePageUrl();
+
+        String categoryUri = UriComponentsBuilder.fromHttpUrl(url + "/api/menuitems")
                 .queryParam("page", page)
                 .queryParam("size", size)
                 .queryParam("sortBy", (Object[]) sortBy)
                 .queryParam("direction", (Object[]) direction)
                 .toUriString();
 
-        return webClient.get()
+        return webClientBuilder.build().get()
                 .uri(categoryUri)
                 .retrieve()
                 .onStatus(
@@ -116,7 +122,8 @@ public class OrderServiceImpl implements OrderService{
                 .onStatus(
                         status -> status.is5xxServerError(), response -> response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
-                                    throw new ServerErrorException("Server error: " + errorBody);
+                                    System.err.println("Server Error: " + errorBody);
+                                    return Mono.error(new ServerErrorException("Server error: " + errorBody));
                                 }))
                 .bodyToMono(new ParameterizedTypeReference<PaginatedResponse<Category>>() {
                 })
@@ -134,7 +141,7 @@ public class OrderServiceImpl implements OrderService{
                 .queryParam("categoryName", categoryName)
                 .toUriString();
 
-        return webClient.get()
+        return webClientBuilder.build().get()
                 .uri(uri)
                 .retrieve()
                 .onStatus(
@@ -192,7 +199,7 @@ public class OrderServiceImpl implements OrderService{
             throw new ResourceNotFoundException("Choose at least one Menu Item.");
 
         // Check if each selected MenuItem with choosen quantity is available
-        List<Boolean> areMenuItemsAvailable = webClient.get()
+        List<Boolean> areMenuItemsAvailable = webClientBuilder.build().get()
                 .uri(UriComponentsBuilder
                         .fromHttpUrl(inventoryServiceUrl + "/availability")
                         .queryParam("menuItemIds", menuItemIds.toArray())
@@ -218,7 +225,7 @@ public class OrderServiceImpl implements OrderService{
                 });
 
         // Reduce the stock for each selected MenuItem with choosen quantity
-        webClient.put()
+        webClientBuilder.build().put()
                 .uri(UriComponentsBuilder
                         .fromHttpUrl(inventoryServiceUrl + "/reduce")
                         .queryParam("menuItemIds", menuItemIds.toArray())
@@ -239,7 +246,7 @@ public class OrderServiceImpl implements OrderService{
         // Calculate total price and update status
         double totalPrice = placedOrder.getMenuItems().stream()
                 .mapToDouble(menuItemId -> {
-                    Double price = webClient
+                    Double price = webClientBuilder.build()
                             .get()
                             .uri(menuServiceUrl + "/" + menuItemId.getOrderMenuItemIdKey().getMenuItemId() + "/price")
                             .retrieve()
