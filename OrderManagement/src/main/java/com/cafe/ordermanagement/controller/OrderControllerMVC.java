@@ -20,13 +20,9 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/orders")
+@RequestMapping("/ordersMVC")
 public class OrderControllerMVC {
-
     private final OrderService orderService;
-    @Value("${menu.service.url}")
-    private String menuServiceUrl;
-    @Value("${inventory.service.url}")
     private String inventoryServiceUrl;
 
     public OrderControllerMVC(OrderService orderService) {

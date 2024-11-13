@@ -33,11 +33,7 @@ public class OrderServiceImpl implements OrderService{
     private final OrderDAOJPA orderDAOJPA;
     @Autowired
     private WebClient.Builder webClientBuilder;
-    @Value("${menu.service.url}")
     private String menuServiceUrl;
-    @Value("${menu.service.url}")
-    private String menuServiceCategoryUrl;
-    @Value("${inventory.service.url}")
     private String inventoryServiceUrl;
     @Autowired
     private EurekaClient discoveryClient;
@@ -49,9 +45,8 @@ public class OrderServiceImpl implements OrderService{
     }
     @PostConstruct
     private void init() {
-        menuServiceUrl += "/api/menuitems";
-        menuServiceCategoryUrl += "/api/categories";
-        inventoryServiceUrl += "/api/inventory";
+        menuServiceUrl = discoveryClient.getNextServerFromEureka("menu", false).getHomePageUrl();
+        inventoryServiceUrl = discoveryClient.getNextServerFromEureka("inventory", false).getHomePageUrl() + "/api/inventory";
     }
 
     @Override
@@ -77,7 +72,7 @@ public class OrderServiceImpl implements OrderService{
     }
 
     public PaginatedResponse<MenuItem> getAllMenuItems(int page, int size, String[] sortBy, String[] direction) {
-        String uri = UriComponentsBuilder.fromHttpUrl(menuServiceUrl)
+        String uri = UriComponentsBuilder.fromHttpUrl(menuServiceUrl + "/api/menuitems")
                 .queryParam("page", page)
                 .queryParam("size", size)
                 .queryParam("sortBy", (Object[]) sortBy)
@@ -102,9 +97,7 @@ public class OrderServiceImpl implements OrderService{
     @Override
     public PaginatedResponse<Category> getAllMenuItemCategories(
             int page, int size, String[] sortBy, String[] direction) {
-        String url = discoveryClient.getNextServerFromEureka("menu", false).getHomePageUrl();
-
-        String categoryUri = UriComponentsBuilder.fromHttpUrl(url + "/api/menuitems")
+        String categoryUri = UriComponentsBuilder.fromHttpUrl(menuServiceUrl + "/api/categories")
                 .queryParam("page", page)
                 .queryParam("size", size)
                 .queryParam("sortBy", (Object[]) sortBy)
@@ -133,7 +126,7 @@ public class OrderServiceImpl implements OrderService{
     @Override
     public PaginatedResponse<MenuItem> getAllMenuItemsByCategory(
             int page, int size, String[] sortBy, String[] direction, String categoryName){
-        String uri = UriComponentsBuilder.fromHttpUrl(menuServiceUrl + "/filter/category-name")
+        String uri = UriComponentsBuilder.fromHttpUrl(menuServiceUrl + "/api/menuitems/filter/category-name")
                 .queryParam("page", page)
                 .queryParam("size", size)
                 .queryParam("sortBy", (Object[]) sortBy)
@@ -160,7 +153,7 @@ public class OrderServiceImpl implements OrderService{
     public Map<String, List<MenuItem>> getMenuItemsGroupedByCategory(
             int page, int size, String[] sortBy, String[] direction){
         Map<String, List<MenuItem>> categorizedMenuItems = new LinkedHashMap<>();
-                List<Category> categories =
+        List<Category> categories =
                 this.getAllMenuItemCategories(page, size, sortBy, direction).getData();
 
         categories.stream().forEach(
@@ -248,7 +241,7 @@ public class OrderServiceImpl implements OrderService{
                 .mapToDouble(menuItemId -> {
                     Double price = webClientBuilder.build()
                             .get()
-                            .uri(menuServiceUrl + "/" + menuItemId.getOrderMenuItemIdKey().getMenuItemId() + "/price")
+                            .uri(menuServiceUrl  + "/api/menuitems/" + menuItemId.getOrderMenuItemIdKey().getMenuItemId() + "/price")
                             .retrieve()
                             .bodyToMono(Double.class)
                             .block();
