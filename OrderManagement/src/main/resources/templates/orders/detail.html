@@ -77,9 +77,9 @@
 
         <!-- Action buttons -->
         <div class="action-buttons">
-            <a th:href="@{'/orders/edit/' + ${order.id}}" class="btn btn-warning">Edit</a>
-            <a href="/orders" class="btn btn-secondary">Back to List</a>
-            <form th:action="@{'/orders/delete/' + ${order.id}}" method="post" class="d-inline-block">
+            <a th:href="@{'/order/orders/edit/' + ${order.id}}" class="btn btn-warning">Edit</a>
+            <a href="/order/orders" class="btn btn-secondary">Back to List</a>
+            <form th:action="@{'/order/orders/delete/' + ${order.id}}" method="post" class="d-inline-block">
                 <button class="btn btn-danger" type="submit">Delete Order</button>
             </form>
         </div>

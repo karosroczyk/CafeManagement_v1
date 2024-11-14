@@ -7,7 +7,7 @@
 <body class="container mt-5">
 <h1 class="mb-4 text-center">Create New Order</h1>
 
-<form th:action="@{/orders}" th:object="${newOrder}" method="post">
+<form th:action="@{/order/orders}" th:object="${newOrder}" method="post">
     <div th:each="category : ${categorizedMenuItems}">
         <h2 th:text="${category.key}"></h2>
         <table class="table table-hover table-striped">
@@ -61,7 +61,7 @@
 </form>
 
 <div class="text-center mt-4">
-    <a href="/orders" class="btn btn-secondary">Back to Orders List</a>
+    <a href="/order/orders" class="btn btn-secondary">Back to Orders List</a>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

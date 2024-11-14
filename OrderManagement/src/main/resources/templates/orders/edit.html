@@ -22,7 +22,7 @@
 <div class="container form-container">
   <div>
     <h1 class="text-center mb-4">Edit Order</h1>
-    <form th:action="@{'/orders/update/' + ${order.id}}" th:object="${order}" method="post" class="text-center">
+    <form th:action="@{'/order/orders/update/' + ${order.id}}" th:object="${order}" method="post" class="text-center">
       <!-- Customer ID -->
       <div class="form-group">
         <label for="customerId">Customer ID:</label>
@@ -49,7 +49,7 @@
     </form>
 
     <div class="text-center mt-3">
-      <a href="/orders" class="btn btn-secondary">Back to List</a>
+      <a href="/order/orders" class="btn btn-secondary">Back to List</a>
     </div>
   </div>
 </div>

@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/ordersMVC")
+@RequestMapping("/orders")
 public class OrderControllerMVC {
     private final OrderService orderService;
     private String inventoryServiceUrl;
