@@ -11,7 +11,7 @@
 	<groupId>com.cafe.</groupId>
 	<artifactId>menumanagement</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>order</name>
+	<name>menu</name>
 	<description>Order Management</description>
 
 	<dependencies>
