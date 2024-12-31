@@ -1,3 +1,6 @@
+# Note
+CafeManagement_v1 is the first version of CafeManagement. It is a backend application with some Thymeleaf as the frontend, but it lacks authentication and authorization mechanisms. A new CafeManagement project was created, featuring authentication and authorization mechanisms, with the frontend developed in Angular and the backend in Spring Boot.
+
 # Project Description
 
 The Café Management System is a web-based application designed to manage the operations of a café. The application allows administrators to manage the menu, orders, inventory, and customers. It also provides customers with a simple interface to browse the menu, place orders, and track the status of their orders.
